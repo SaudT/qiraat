@@ -2,6 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
+from app.models.base import Base
 
 
 engine = create_engine(settings.DATABASE_URL)
@@ -16,3 +17,8 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def init_db() -> None:
+    """Create database tables for registered models."""
+    Base.metadata.create_all(bind=engine)
