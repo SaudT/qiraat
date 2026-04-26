@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.core.database import init_db
+from app.core.seed_data import seed_recitations
 from app.models.recitation import Recitation  # noqa: F401
 from app.routes.recitation_routes import router as recitation_router
 
@@ -16,6 +17,7 @@ app.include_router(recitation_router, prefix="/api/v1")
 @app.on_event("startup")
 def on_startup() -> None:
     init_db()
+    seed_recitations()
 
 
 @app.get("/health", tags=["Health"])
