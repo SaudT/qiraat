@@ -3,10 +3,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import HomeScreen from "../screens/HomeScreen";
 import RecitationDetailScreen from "../screens/RecitationDetailScreen";
+import { Recitation } from "../services/recitationService";
 
 export type RootStackParamList = {
   Home: undefined;
-  RecitationDetail: undefined;
+  RecitationDetail: { recitation: Recitation };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

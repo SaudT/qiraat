@@ -14,25 +14,25 @@ def seed_recitations() -> None:
             Recitation(
                 title="Surah Al-Fatiha",
                 reciter_name="Mishary Rashid Alafasy",
-                audio_url="https://download.quranicaudio.com/qdc/mishari_al_afasy/murattal/001.mp3",
+                audio_url="https://everyayah.com/data/Alafasy_128kbps/001001.mp3",
                 duration=95,
             ),
             Recitation(
                 title="Surah Al-Baqarah (Ayat 1-5)",
                 reciter_name="Abdul Basit Abdus Samad",
-                audio_url="https://download.quranicaudio.com/qdc/abdul_basit/murattal/002.mp3",
+                audio_url="https://everyayah.com/data/Abdul_Basit_Murattal_64kbps/002001.mp3",
                 duration=180,
             ),
             Recitation(
                 title="Surah Al-Ikhlas",
                 reciter_name="Saad Al-Ghamdi",
-                audio_url="https://download.quranicaudio.com/qdc/saad_al_ghamdi/murattal/112.mp3",
+                audio_url="https://everyayah.com/data/Ghamadi_40kbps/112001.mp3",
                 duration=28,
             ),
             Recitation(
                 title="Surah Ar-Rahman (Opening)",
                 reciter_name="Maher Al-Muaiqly",
-                audio_url="https://download.quranicaudio.com/qdc/maher_almuaiqly/murattal/055.mp3",
+                audio_url="https://everyayah.com/data/MaherAlMuaiqly128kbps/055001.mp3",
                 duration=210,
             ),
         ]
