@@ -1,22 +1,41 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useFocusEffect } from "@react-navigation/native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  GestureResponderEvent,
+  LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useAudioPlayer, useAudioPlayerStatus } from "expo-audio";
 
+import { useAudioPlayerContext } from "../context/AudioPlayerContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type Props = NativeStackScreenProps<RootStackParamList, "RecitationDetail">;
 
 export default function RecitationDetailScreen({ route }: Props) {
-  const recitation = route.params?.recitation;
+  const {
+    currentRecitation,
+    isPlaying,
+    isBuffering,
+    isLoaded,
+    currentTime,
+    duration,
+    setCurrentRecitation,
+    togglePlayPause,
+    seekTo,
+  } = useAudioPlayerContext();
+  const routeRecitation = route.params?.recitation;
+  const recitation = currentRecitation ?? routeRecitation;
   const [error, setError] = useState<string | null>(null);
-  const [isTogglingPlayback, setIsTogglingPlayback] = useState(false);
-  const [isStartingPlayback, setIsStartingPlayback] = useState(false);
-  const player = useAudioPlayer({ uri: recitation?.audio_url ?? "" });
-  const status = useAudioPlayerStatus(player);
-  const isPlaying = status.playing;
-  const isLoadingAudio = isStartingPlayback || status.isBuffering;
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [progressBarWidth, setProgressBarWidth] = useState(0);
+  const [dragProgress, setDragProgress] = useState<number | null>(null);
+  const isLoadingAudio = isBuffering && !isPlaying;
+  const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
+  const displayedProgress = dragProgress ?? progress;
+  const displayedTime = displayedProgress * duration;
   const isValidAudioUrl = useMemo(
     () =>
       !!recitation &&
@@ -25,20 +44,11 @@ export default function RecitationDetailScreen({ route }: Props) {
     [recitation]
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        // Stop and unload when leaving detail screen for reliable cleanup.
-        try {
-          player.pause();
-          player.seekTo(0).catch(() => null);
-          player.replace(null);
-        } catch {
-          // Ignore if native player was already released.
-        }
-      };
-    }, [player])
-  );
+  useEffect(() => {
+    if (routeRecitation) {
+      setCurrentRecitation(routeRecitation, false);
+    }
+  }, [routeRecitation, setCurrentRecitation]);
 
   if (!recitation) {
     return (
@@ -48,62 +58,118 @@ export default function RecitationDetailScreen({ route }: Props) {
     );
   }
 
-  const handlePlayPause = async () => {
-    if (isTogglingPlayback) {
-      return;
-    }
-
+  const handlePlayPause = () => {
     if (!isValidAudioUrl) {
       setError("Audio URL is invalid for this recitation.");
       return;
     }
 
     try {
-      setIsTogglingPlayback(true);
       setError(null);
-
-      if (isPlaying) {
-        player.pause();
-      } else {
-        setIsStartingPlayback(true);
-        player.play();
-      }
+      togglePlayPause();
     } catch {
       setError("Audio failed to load or play. Please try another recitation.");
-    } finally {
-      setIsTogglingPlayback(false);
     }
   };
 
-  useEffect(() => {
-    if (!isStartingPlayback) {
+  const handleProgressBarLayout = (event: LayoutChangeEvent) => {
+    setProgressBarWidth(event.nativeEvent.layout.width);
+  };
+
+  const getSeekRatioFromLocation = (locationX: number) => {
+    const clampedLocation = Math.max(0, Math.min(locationX, progressBarWidth));
+    return progressBarWidth > 0 ? clampedLocation / progressBarWidth : 0;
+  };
+
+  const seekToRatio = async (seekRatio: number) => {
+    if (!isLoaded || duration <= 0 || progressBarWidth <= 0 || isSeeking) {
       return;
     }
 
-    if (status.playing) {
-      setIsStartingPlayback(false);
+    try {
+      setIsSeeking(true);
+      setError(null);
+      const targetSeconds = seekRatio * duration;
+      await seekTo(targetSeconds);
+    } catch {
+      setError("Unable to seek audio position right now.");
+    } finally {
+      setIsSeeking(false);
+    }
+  };
+
+  const handleSeekPress = (event: GestureResponderEvent) => {
+    const seekRatio = getSeekRatioFromLocation(event.nativeEvent.locationX);
+    void seekToRatio(seekRatio);
+  };
+
+  const handleDragStart = (
+    event: { nativeEvent: { locationX: number } }
+  ) => {
+    if (!isLoaded || duration <= 0) {
       return;
     }
+    const seekRatio = getSeekRatioFromLocation(event.nativeEvent.locationX);
+    setDragProgress(seekRatio);
+  };
 
-    if (!status.isBuffering && !status.playing && !status.isLoaded) {
-      setIsStartingPlayback(false);
-      setError("Audio failed to load or play. Please try another recitation.");
+  const handleDragMove = (
+    event: { nativeEvent: { locationX: number } }
+  ) => {
+    if (!isLoaded || duration <= 0) {
+      return;
     }
-  }, [isStartingPlayback, status.isBuffering, status.isLoaded, status.playing]);
+    const seekRatio = getSeekRatioFromLocation(event.nativeEvent.locationX);
+    setDragProgress(seekRatio);
+  };
+
+  const handleDragEnd = () => {
+    if (dragProgress === null) {
+      return;
+    }
+    const finalRatio = dragProgress;
+    setDragProgress(null);
+    void seekToRatio(finalRatio);
+  };
 
   return (
     <View style={styles.centerContainer}>
       <Text style={styles.title}>{recitation.title}</Text>
       <Text style={styles.subtitle}>{recitation.reciter_name}</Text>
+      <View style={styles.progressSection}>
+        <Pressable
+          onLayout={handleProgressBarLayout}
+          style={styles.progressBarTrack}
+          onPress={handleSeekPress}
+          disabled={!isLoaded || isSeeking}
+          onStartShouldSetResponder={() => isLoaded && duration > 0}
+          onMoveShouldSetResponder={() => isLoaded && duration > 0}
+          onResponderGrant={handleDragStart}
+          onResponderMove={handleDragMove}
+          onResponderRelease={handleDragEnd}
+          onResponderTerminate={handleDragEnd}
+        >
+          <View
+            style={[styles.progressBarFill, { width: `${displayedProgress * 100}%` }]}
+          />
+          <View
+            style={[styles.progressHandle, { left: `${displayedProgress * 100}%` }]}
+          />
+        </Pressable>
+        <View style={styles.timeRow}>
+          <Text style={styles.timeText}>{formatTime(displayedTime)}</Text>
+          <Text style={styles.timeText}>{formatTime(duration)}</Text>
+        </View>
+      </View>
       {isLoadingAudio ? <Text style={styles.infoText}>Loading audio...</Text> : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <Pressable
         style={[
           styles.playButton,
-          (isLoadingAudio || isTogglingPlayback) && styles.playButtonDisabled,
+          isLoadingAudio && styles.playButtonDisabled,
         ]}
         onPress={handlePlayPause}
-        disabled={isLoadingAudio || isTogglingPlayback}
+        disabled={isLoadingAudio}
       >
         <Text style={styles.playButtonText}>{isPlaying ? "Pause" : "Play"}</Text>
       </Pressable>
@@ -134,6 +200,41 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginBottom: 12,
   },
+  progressSection: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  progressBarTrack: {
+    width: "100%",
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#d9d9d9",
+    justifyContent: "center",
+  },
+  progressBarFill: {
+    position: "absolute",
+    left: 0,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#3f3f3f",
+  },
+  progressHandle: {
+    position: "absolute",
+    marginLeft: -6,
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: "#1f1f1f",
+  },
+  timeRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  timeText: {
+    fontSize: 13,
+    color: "#555555",
+  },
   errorText: {
     fontSize: 15,
     color: "#b00020",
@@ -158,3 +259,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+function formatTime(seconds: number): string {
+  const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0;
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}

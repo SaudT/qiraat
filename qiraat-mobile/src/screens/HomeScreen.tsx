@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { useAudioPlayerContext } from "../context/AudioPlayerContext";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import { getRecitations, Recitation } from "../services/recitationService";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export default function HomeScreen({ navigation }: Props) {
+  const { setCurrentRecitation } = useAudioPlayerContext();
   const [recitations, setRecitations] = useState<Recitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +57,10 @@ export default function HomeScreen({ navigation }: Props) {
         renderItem={({ item: recitation }) => (
         <Pressable
           style={styles.itemContainer}
-          onPress={() =>
-            navigation.navigate("RecitationDetail", { recitation })
-          }
+          onPress={() => {
+            setCurrentRecitation(recitation, false);
+            navigation.navigate("RecitationDetail", { recitation });
+          }}
         >
           <Text style={styles.itemTitle}>{recitation.title}</Text>
           <Text style={styles.itemSubtitle}>{recitation.reciter_name}</Text>
