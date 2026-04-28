@@ -7,8 +7,15 @@ import { RootStackParamList } from "../navigation/AppNavigator";
 
 export default function MiniPlayer() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { currentRecitation, isPlaying, isBuffering, togglePlayPause } =
-    useAudioPlayerContext();
+  const {
+    currentRecitation,
+    isPlaying,
+    isBuffering,
+    currentTime,
+    duration,
+    togglePlayPause,
+  } = useAudioPlayerContext();
+  const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0;
 
   if (!currentRecitation) {
     return null;
@@ -28,6 +35,9 @@ export default function MiniPlayer() {
         <Text style={styles.subtitle} numberOfLines={1}>
           {currentRecitation.reciter_name}
         </Text>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+        </View>
       </Pressable>
       <View style={styles.controlsSection}>
         <Pressable style={styles.button} onPress={togglePlayPause}>
@@ -66,6 +76,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 13,
     color: "#555555",
+    marginBottom: 6,
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#d0d0d0",
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "#3f3f3f",
   },
   button: {
     minWidth: 68,
