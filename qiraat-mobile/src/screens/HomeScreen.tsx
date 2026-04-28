@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { useAudioPlayerContext } from "../context/AudioPlayerContext";
@@ -11,8 +11,25 @@ type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 export default function HomeScreen({ navigation }: Props) {
   const { setCurrentRecitation } = useAudioPlayerContext();
   const [recitations, setRecitations] = useState<Recitation[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const filteredRecitations = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return recitations;
+    }
+
+    return recitations.filter((recitation) => {
+      const title = recitation.title.toLowerCase();
+      const reciterName = recitation.reciter_name.toLowerCase();
+      return (
+        title.includes(normalizedQuery) ||
+        reciterName.includes(normalizedQuery)
+      );
+    });
+  }, [recitations, searchQuery]);
 
   useEffect(() => {
     const loadRecitations = async () => {
@@ -49,8 +66,21 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <Text style={styles.headerTitle}>Recitations</Text>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search recitations..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      {filteredRecitations.length === 0 ? (
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateText}>No recitations found</Text>
+        </View>
+      ) : null}
       <FlatList
-        data={recitations}
+        data={filteredRecitations}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -92,6 +122,23 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 24,
+  },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#cfcfcf",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  emptyStateContainer: {
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  emptyStateText: {
+    fontSize: 15,
+    color: "#666666",
   },
   itemContainer: {
     paddingVertical: 14,
