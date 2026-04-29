@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   progressFill: {
     height: 4,
     borderRadius: 999,
-    backgroundColor: "#3f3f3f",
+    backgroundColor: "#0F766E",
   },
   button: {
     minWidth: 68,
@@ -95,10 +95,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#222222",
+    borderColor: "#0F766E",
+    backgroundColor: "#0F766E",
   },
   buttonText: {
     fontSize: 14,
     fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

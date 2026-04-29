@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
@@ -46,30 +47,35 @@ export default function HomeScreen({ navigation }: Props) {
     });
   }, [recitations, searchQuery, selectedReciter]);
 
-  useEffect(() => {
-    const loadRecitations = async () => {
-      try {
-        setError(null);
-        const data = await getRecitations();
-        setRecitations(data);
-        const uniqueReciters = Array.from(
-          new Set(data.map((recitation) => recitation.reciter_name))
-        ).sort((a, b) => a.localeCompare(b));
-        setReciters(uniqueReciters);
-      } catch (fetchError) {
-        setError("Failed to load recitations.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadRecitations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getRecitations();
+      setRecitations(data);
+      const uniqueReciters = Array.from(
+        new Set(data.map((recitation) => recitation.reciter_name))
+      ).sort((a, b) => a.localeCompare(b));
+      setReciters(uniqueReciters);
+    } catch {
+      setError("Could not load recitations. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    loadRecitations();
+  useEffect(() => {
+    void loadRecitations();
   }, []);
+
+  const hasSearchOrFilter =
+    searchQuery.trim().length > 0 || selectedReciter !== "All";
 
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.statusText}>Loading...</Text>
+        <ActivityIndicator size="small" />
+        <Text style={styles.statusText}>Loading recitations...</Text>
       </View>
     );
   }
@@ -78,6 +84,9 @@ export default function HomeScreen({ navigation }: Props) {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.statusText}>{error}</Text>
+        <Pressable style={styles.retryButton} onPress={loadRecitations}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </Pressable>
       </View>
     );
   }
@@ -93,36 +102,38 @@ export default function HomeScreen({ navigation }: Props) {
         autoCapitalize="none"
         autoCorrect={false}
       />
-      <FlatList
-        horizontal
-        data={["All", ...reciters]}
-        keyExtractor={(item) => `reciter-filter-${item}`}
-        showsHorizontalScrollIndicator={false}
-        style={styles.reciterFilterList}
-        contentContainerStyle={styles.reciterFilterRow}
-        renderItem={({ item: reciter }) => {
-          const isSelected = selectedReciter === reciter;
-          return (
-            <Pressable
-              style={[
-                styles.reciterChip,
-                isSelected && styles.reciterChipSelected,
-              ]}
-              onPress={() => setSelectedReciter(reciter)}
-              android_ripple={{ color: "#d9d9d9", borderless: false }}
-            >
-              <Text
+      <View style={styles.reciterFilterContainer}>
+        <FlatList
+          horizontal
+          data={["All", ...reciters]}
+          keyExtractor={(item) => `reciter-filter-${item}`}
+          showsHorizontalScrollIndicator={false}
+          style={styles.reciterFilterList}
+          contentContainerStyle={styles.reciterFilterRow}
+          renderItem={({ item: reciter }) => {
+            const isSelected = selectedReciter === reciter;
+            return (
+              <Pressable
                 style={[
-                  styles.reciterChipText,
-                  isSelected && styles.reciterChipTextSelected,
+                  styles.reciterChip,
+                  isSelected && styles.reciterChipSelected,
                 ]}
+                onPress={() => setSelectedReciter(reciter)}
+                android_ripple={{ color: "#d9d9d9", borderless: false }}
               >
-                {reciter}
-              </Text>
-            </Pressable>
-          );
-        }}
-      />
+                <Text
+                  style={[
+                    styles.reciterChipText,
+                    isSelected && styles.reciterChipTextSelected,
+                  ]}
+                >
+                  {reciter}
+                </Text>
+              </Pressable>
+            );
+          }}
+        />
+      </View>
       {recentlyPlayed.length > 0 ? (
         <View style={styles.recentSection}>
           <Text style={styles.recentHeader}>Recently Played</Text>
@@ -143,7 +154,13 @@ export default function HomeScreen({ navigation }: Props) {
       ) : null}
       {filteredRecitations.length === 0 ? (
         <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateText}>No recitations found</Text>
+          <Text style={styles.emptyStateText}>
+            {recitations.length === 0
+              ? "No recitations available yet."
+              : hasSearchOrFilter
+                ? "No recitations match your search or filter."
+                : "No recitations found."}
+          </Text>
         </View>
       ) : null}
       <FlatList
@@ -181,14 +198,17 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
+    marginTop: 8,
+    textAlign: "center",
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "600",
     marginBottom: 12,
+    color: "#0F766E",
   },
   listContent: {
-    paddingBottom: 24,
+    paddingBottom: 120,
   },
   recentSection: {
     marginBottom: 12,
@@ -225,9 +245,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 12,
   },
+  reciterFilterContainer: {
+    minHeight: 52,
+    marginBottom: 12,
+    justifyContent: "center",
+  },
   reciterFilterRow: {
-    paddingTop: 4,
-    paddingBottom: 12,
+    paddingVertical: 4,
     alignItems: "center",
   },
   reciterFilterList: {
@@ -244,8 +268,8 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   reciterChipSelected: {
-    borderColor: "#2f2f2f",
-    backgroundColor: "#2f2f2f",
+    borderColor: "#0F766E",
+    backgroundColor: "#ffffff",
   },
   reciterChipText: {
     fontSize: 13,
@@ -254,7 +278,8 @@ const styles = StyleSheet.create({
     color: "#333333",
   },
   reciterChipTextSelected: {
-    color: "#ffffff",
+    color: "#0F766E",
+    fontWeight: "700",
   },
   emptyStateContainer: {
     paddingVertical: 16,
@@ -263,8 +288,11 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 15,
     color: "#666666",
+    textAlign: "center",
   },
   itemContainer: {
+    minHeight: 56,
+    justifyContent: "center",
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderWidth: 1,
@@ -283,5 +311,17 @@ const styles = StyleSheet.create({
   itemSubtitle: {
     fontSize: 14,
     color: "#555555",
+  },
+  retryButton: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#333333",
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

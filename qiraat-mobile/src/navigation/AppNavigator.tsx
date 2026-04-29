@@ -20,10 +20,15 @@ export default function AppNavigator() {
       <View style={styles.container}>
         <View style={styles.content}>
           <Stack.Navigator initialRouteName="Home">
-            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen
+              name="Home"
+              component={HomeScreen}
+              options={sharedScreenOptions}
+            />
             <Stack.Screen
               name="RecitationDetail"
               component={RecitationDetailScreen}
+              options={sharedScreenOptions}
             />
           </Stack.Navigator>
         </View>
@@ -41,3 +46,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+const sharedScreenOptions = {
+  headerStyle: {
+    backgroundColor: "#0F766E",
+  },
+  headerTintColor: "#FFFFFF",
+  headerTitleStyle: {
+    fontWeight: "700" as const,
+  },
+};

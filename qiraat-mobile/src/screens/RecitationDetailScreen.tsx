@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   GestureResponderEvent,
   LayoutChangeEvent,
   Pressable,
@@ -161,7 +162,12 @@ export default function RecitationDetailScreen({ route }: Props) {
           <Text style={styles.timeText}>{formatTime(duration)}</Text>
         </View>
       </View>
-      {isLoadingAudio ? <Text style={styles.infoText}>Loading audio...</Text> : null}
+      {isLoadingAudio ? (
+        <View style={styles.loadingAudioRow}>
+          <ActivityIndicator size="small" />
+          <Text style={styles.infoText}>Loading audio...</Text>
+        </View>
+      ) : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       <Pressable
         style={[
@@ -198,6 +204,11 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 15,
+    marginLeft: 8,
+  },
+  loadingAudioRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
   },
   progressSection: {
@@ -216,7 +227,7 @@ const styles = StyleSheet.create({
     left: 0,
     height: 8,
     borderRadius: 999,
-    backgroundColor: "#3f3f3f",
+    backgroundColor: "#0F766E",
   },
   progressHandle: {
     position: "absolute",
@@ -225,6 +236,8 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 999,
     backgroundColor: "#1f1f1f",
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
   },
   timeRow: {
     marginTop: 8,
@@ -242,14 +255,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   playButton: {
-    minWidth: 140,
+    minWidth: 160,
+    minHeight: 50,
     alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderWidth: 1,
-    borderColor: "#222222",
+    borderColor: "#0F766E",
     borderRadius: 10,
-    backgroundColor: "#f3f3f3",
+    backgroundColor: "#0F766E",
   },
   playButtonDisabled: {
     opacity: 0.5,
@@ -257,6 +272,7 @@ const styles = StyleSheet.create({
   playButtonText: {
     fontSize: 18,
     fontWeight: "600",
+    color: "#FFFFFF",
   },
 });
 
