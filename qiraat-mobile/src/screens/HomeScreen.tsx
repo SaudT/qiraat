@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { useAudioPlayerContext } from "../context/AudioPlayerContext";
@@ -9,19 +16,27 @@ import { getRecitations, Recitation } from "../services/recitationService";
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
 
 export default function HomeScreen({ navigation }: Props) {
-  const { setCurrentRecitation } = useAudioPlayerContext();
+  const { setCurrentRecitation, recentlyPlayed } = useAudioPlayerContext();
   const [recitations, setRecitations] = useState<Recitation[]>([]);
+  const [reciters, setReciters] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedReciter, setSelectedReciter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const filteredRecitations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return recitations;
-    }
-
     return recitations.filter((recitation) => {
+      const matchesReciter =
+        selectedReciter === "All" || recitation.reciter_name === selectedReciter;
+      if (!matchesReciter) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
       const title = recitation.title.toLowerCase();
       const reciterName = recitation.reciter_name.toLowerCase();
       return (
@@ -29,7 +44,7 @@ export default function HomeScreen({ navigation }: Props) {
         reciterName.includes(normalizedQuery)
       );
     });
-  }, [recitations, searchQuery]);
+  }, [recitations, searchQuery, selectedReciter]);
 
   useEffect(() => {
     const loadRecitations = async () => {
@@ -37,6 +52,10 @@ export default function HomeScreen({ navigation }: Props) {
         setError(null);
         const data = await getRecitations();
         setRecitations(data);
+        const uniqueReciters = Array.from(
+          new Set(data.map((recitation) => recitation.reciter_name))
+        ).sort((a, b) => a.localeCompare(b));
+        setReciters(uniqueReciters);
       } catch (fetchError) {
         setError("Failed to load recitations.");
       } finally {
@@ -74,6 +93,54 @@ export default function HomeScreen({ navigation }: Props) {
         autoCapitalize="none"
         autoCorrect={false}
       />
+      <FlatList
+        horizontal
+        data={["All", ...reciters]}
+        keyExtractor={(item) => `reciter-filter-${item}`}
+        showsHorizontalScrollIndicator={false}
+        style={styles.reciterFilterList}
+        contentContainerStyle={styles.reciterFilterRow}
+        renderItem={({ item: reciter }) => {
+          const isSelected = selectedReciter === reciter;
+          return (
+            <Pressable
+              style={[
+                styles.reciterChip,
+                isSelected && styles.reciterChipSelected,
+              ]}
+              onPress={() => setSelectedReciter(reciter)}
+              android_ripple={{ color: "#d9d9d9", borderless: false }}
+            >
+              <Text
+                style={[
+                  styles.reciterChipText,
+                  isSelected && styles.reciterChipTextSelected,
+                ]}
+              >
+                {reciter}
+              </Text>
+            </Pressable>
+          );
+        }}
+      />
+      {recentlyPlayed.length > 0 ? (
+        <View style={styles.recentSection}>
+          <Text style={styles.recentHeader}>Recently Played</Text>
+          {recentlyPlayed.map((recitation) => (
+            <Pressable
+              key={`recent-${recitation.id}`}
+              style={styles.recentItem}
+              onPress={() => {
+                setCurrentRecitation(recitation, false);
+                navigation.navigate("RecitationDetail", { recitation });
+              }}
+            >
+              <Text style={styles.recentItemTitle}>{recitation.title}</Text>
+              <Text style={styles.recentItemSubtitle}>{recitation.reciter_name}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       {filteredRecitations.length === 0 ? (
         <View style={styles.emptyStateContainer}>
           <Text style={styles.emptyStateText}>No recitations found</Text>
@@ -123,6 +190,32 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 24,
   },
+  recentSection: {
+    marginBottom: 12,
+  },
+  recentHeader: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  recentItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
+    borderRadius: 8,
+    backgroundColor: "#fafafa",
+    marginBottom: 8,
+  },
+  recentItemTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  recentItemSubtitle: {
+    fontSize: 13,
+    color: "#666666",
+  },
   searchInput: {
     borderWidth: 1,
     borderColor: "#cfcfcf",
@@ -131,6 +224,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 16,
     marginBottom: 12,
+  },
+  reciterFilterRow: {
+    paddingTop: 4,
+    paddingBottom: 12,
+    alignItems: "center",
+  },
+  reciterFilterList: {
+    flexGrow: 0,
+  },
+  reciterChip: {
+    height: 36,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#cfcfcf",
+    backgroundColor: "#ffffff",
+    marginRight: 8,
+  },
+  reciterChipSelected: {
+    borderColor: "#2f2f2f",
+    backgroundColor: "#2f2f2f",
+  },
+  reciterChipText: {
+    fontSize: 13,
+    lineHeight: 16,
+    fontWeight: "500",
+    color: "#333333",
+  },
+  reciterChipTextSelected: {
+    color: "#ffffff",
   },
   emptyStateContainer: {
     paddingVertical: 16,
