@@ -53,7 +53,7 @@ export default function RecitationDetailScreen({ route }: Props) {
 
   if (!recitation) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={styles.content}>
         <Text style={styles.errorText}>Recitation data is missing.</Text>
       </View>
     );
@@ -134,10 +134,16 @@ export default function RecitationDetailScreen({ route }: Props) {
   };
 
   return (
-    <View style={styles.centerContainer}>
-      <Text style={styles.title}>{recitation.title}</Text>
-      <Text style={styles.subtitle}>{recitation.reciter_name}</Text>
-      <View style={styles.progressSection}>
+    <View style={styles.screen}>
+      <View style={styles.hero}>
+        <View style={styles.heroIconCircle}>
+          <Text style={styles.heroIcon}>♫</Text>
+        </View>
+        <Text style={styles.title}>{recitation.title}</Text>
+        <Text style={styles.subtitle}>{recitation.reciter_name}</Text>
+      </View>
+      <View style={styles.content}>
+        <View style={styles.progressSection}>
         <Pressable
           onLayout={handleProgressBarLayout}
           style={styles.progressBarTrack}
@@ -179,26 +185,52 @@ export default function RecitationDetailScreen({ route }: Props) {
       >
         <Text style={styles.playButtonText}>{isPlaying ? "Pause" : "Play"}</Text>
       </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  centerContainer: {
+  screen: {
     flex: 1,
+    backgroundColor: "#ECECEC",
+    padding: 12,
+  },
+  hero: {
+    backgroundColor: "#0F766E",
+    borderRadius: 0,
+    paddingVertical: 24,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 20,
+  },
+  heroIconCircle: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2FAE93",
+    marginBottom: 10,
+  },
+  heroIcon: {
+    fontSize: 46,
+    color: "#A8E6D9",
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 18,
   },
   title: {
-    fontSize: 28,
+    fontSize: 38,
     fontWeight: "700",
     textAlign: "center",
     marginBottom: 10,
+    color: "#E8F6F1",
   },
   subtitle: {
-    fontSize: 18,
-    color: "#555555",
+    fontSize: 30,
+    color: "#B7DCD3",
     textAlign: "center",
     marginBottom: 24,
   },
@@ -245,8 +277,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   timeText: {
-    fontSize: 13,
-    color: "#555555",
+    fontSize: 20,
+    color: "#252525",
   },
   errorText: {
     fontSize: 15,
@@ -255,22 +287,23 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   playButton: {
-    minWidth: 160,
-    minHeight: 50,
+    alignSelf: "center",
+    minWidth: 120,
+    minHeight: 120,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 26,
     borderWidth: 1,
     borderColor: "#0F766E",
-    borderRadius: 10,
+    borderRadius: 999,
     backgroundColor: "#0F766E",
   },
   playButtonDisabled: {
     opacity: 0.5,
   },
   playButtonText: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "600",
     color: "#FFFFFF",
   },
