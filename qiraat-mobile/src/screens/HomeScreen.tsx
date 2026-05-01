@@ -321,15 +321,15 @@ const styles = StyleSheet.create({
   itemContainer: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 56,
+    minHeight: 52,
     paddingVertical: 8,
     paddingHorizontal: 8,
     borderRadius: 12,
     backgroundColor: "#F6F6F6",
   },
   itemIconWrap: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     backgroundColor: "#D4E5E0",
     alignItems: "center",
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   itemIconText: {
     color: "#0F766E",
-    fontSize: 16,
+    fontSize: 14,
     marginLeft: 1,
   },
   itemTextWrap: {
@@ -349,19 +349,20 @@ const styles = StyleSheet.create({
     height: 10,
   },
   itemTitle: {
-    fontSize: 26,
+    fontSize: 17,
     fontWeight: "600",
     marginBottom: 2,
+    color: "#1A1A1A",
   },
   itemSubtitle: {
-    fontSize: 20,
-    color: "#555555",
+    fontSize: 14,
+    color: "#666666",
   },
   itemDuration: {
-    minWidth: 60,
-    fontSize: 20,
+    minWidth: 52,
+    fontSize: 13,
     textAlign: "right",
-    color: "#1f1f1f",
+    color: "#777777",
   },
   retryButton: {
     marginTop: 12,
