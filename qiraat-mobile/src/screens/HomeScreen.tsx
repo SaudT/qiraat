@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -92,102 +93,123 @@ export default function HomeScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.headerTitle}>Recitations</Text>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search recitations..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      <View style={styles.reciterFilterContainer}>
-        <FlatList
-          horizontal
-          data={["All", ...reciters]}
-          keyExtractor={(item) => `reciter-filter-${item}`}
-          showsHorizontalScrollIndicator={false}
-          style={styles.reciterFilterList}
-          contentContainerStyle={styles.reciterFilterRow}
-          renderItem={({ item: reciter }) => {
-            const isSelected = selectedReciter === reciter;
-            return (
-              <Pressable
-                style={[
-                  styles.reciterChip,
-                  isSelected && styles.reciterChipSelected,
-                ]}
-                onPress={() => setSelectedReciter(reciter)}
-                android_ripple={{ color: "#d9d9d9", borderless: false }}
-              >
-                <Text
-                  style={[
-                    styles.reciterChipText,
-                    isSelected && styles.reciterChipTextSelected,
-                  ]}
-                >
-                  {reciter}
-                </Text>
-              </Pressable>
-            );
-          }}
+    <SafeAreaView style={styles.screen}>
+      <View style={styles.card}>
+        <Text style={styles.headerTitle}>Qiraat</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search surah or reciter..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
-      </View>
-      {recentlyPlayed.length > 0 ? (
-        <View style={styles.recentSection}>
-          <Text style={styles.recentHeader}>Recently Played</Text>
-          {recentlyPlayed.map((recitation) => (
+
+        <View style={styles.reciterFilterContainer}>
+          <FlatList
+            horizontal
+            data={["All", ...reciters]}
+            keyExtractor={(item) => `reciter-filter-${item}`}
+            showsHorizontalScrollIndicator={false}
+            style={styles.reciterFilterList}
+            contentContainerStyle={styles.reciterFilterRow}
+            renderItem={({ item: reciter }) => {
+              const isSelected = selectedReciter === reciter;
+              return (
+                <Pressable
+                  style={[
+                    styles.reciterChip,
+                    isSelected && styles.reciterChipSelected,
+                  ]}
+                  onPress={() => setSelectedReciter(reciter)}
+                >
+                  <Text
+                    style={[
+                      styles.reciterChipText,
+                      isSelected && styles.reciterChipTextSelected,
+                    ]}
+                  >
+                    {reciter}
+                  </Text>
+                </Pressable>
+              );
+            }}
+          />
+        </View>
+
+        {recentlyPlayed.length > 0 ? (
+          <View style={styles.recentSection}>
+            <Text style={styles.recentHeader}>Now Playing</Text>
             <Pressable
-              key={`recent-${recitation.id}`}
               style={styles.recentItem}
+              onPress={() => {
+                setCurrentRecitation(recentlyPlayed[0], false);
+                navigation.navigate("RecitationDetail", { recitation: recentlyPlayed[0] });
+              }}
+            >
+              <Text style={styles.recentItemTitle}>{recentlyPlayed[0].title}</Text>
+              <Text style={styles.recentItemSubtitle}>{recentlyPlayed[0].reciter_name}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        <Text style={styles.sectionTitle}>All Recitations</Text>
+
+        {filteredRecitations.length === 0 ? (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateText}>
+              {recitations.length === 0
+                ? "No recitations available yet."
+                : hasSearchOrFilter
+                  ? "No recitations match your search or filter."
+                  : "No recitations found."}
+            </Text>
+          </View>
+        ) : null}
+        <FlatList
+          data={filteredRecitations}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={styles.listContent}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          renderItem={({ item: recitation }) => (
+            <Pressable
+              style={styles.itemContainer}
               onPress={() => {
                 setCurrentRecitation(recitation, false);
                 navigation.navigate("RecitationDetail", { recitation });
               }}
             >
-              <Text style={styles.recentItemTitle}>{recitation.title}</Text>
-              <Text style={styles.recentItemSubtitle}>{recitation.reciter_name}</Text>
+              <View style={styles.itemIconWrap}>
+                <Text style={styles.itemIconText}>▶</Text>
+              </View>
+              <View style={styles.itemTextWrap}>
+                <Text style={styles.itemTitle}>{recitation.title}</Text>
+                <Text style={styles.itemSubtitle}>{recitation.reciter_name}</Text>
+              </View>
+              <Text style={styles.itemDuration}>{formatDuration(recitation.duration)}</Text>
             </Pressable>
-          ))}
-        </View>
-      ) : null}
-      {filteredRecitations.length === 0 ? (
-        <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateText}>
-            {recitations.length === 0
-              ? "No recitations available yet."
-              : hasSearchOrFilter
-                ? "No recitations match your search or filter."
-                : "No recitations found."}
-          </Text>
-        </View>
-      ) : null}
-      <FlatList
-        data={filteredRecitations}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({ item: recitation }) => (
-        <Pressable
-          style={styles.itemContainer}
-          onPress={() => {
-            setCurrentRecitation(recitation, false);
-            navigation.navigate("RecitationDetail", { recitation });
-          }}
-        >
-          <Text style={styles.itemTitle}>{recitation.title}</Text>
-          <Text style={styles.itemSubtitle}>{recitation.reciter_name}</Text>
-        </Pressable>
-        )}
-      />
-    </View>
+          )}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#ECECEC",
+    padding: 12,
+  },
   container: {
     flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  card: {
+    flex: 1,
+    borderRadius: 32,
+    backgroundColor: "#F6F6F6",
     paddingHorizontal: 16,
     paddingTop: 16,
   },
@@ -202,10 +224,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 40,
+    fontWeight: "700",
     marginBottom: 12,
-    color: "#0F766E",
+    color: "#141414",
   },
   listContent: {
     paddingBottom: 120,
@@ -238,8 +260,8 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: "#cfcfcf",
-    borderRadius: 8,
+    borderColor: "#0F766E",
+    borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 12,
     fontSize: 16,
@@ -269,7 +291,7 @@ const styles = StyleSheet.create({
   },
   reciterChipSelected: {
     borderColor: "#0F766E",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#0F766E",
   },
   reciterChipText: {
     fontSize: 13,
@@ -278,8 +300,14 @@ const styles = StyleSheet.create({
     color: "#333333",
   },
   reciterChipTextSelected: {
-    color: "#0F766E",
+    color: "#FFFFFF",
     fontWeight: "700",
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 8,
+    color: "#151515",
   },
   emptyStateContainer: {
     paddingVertical: 16,
@@ -291,26 +319,50 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   itemContainer: {
-    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: 52,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    backgroundColor: "#F6F6F6",
+  },
+  itemIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "#D4E5E0",
+    alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#d5d5d5",
-    borderRadius: 8,
-    backgroundColor: "#ffffff",
+    marginRight: 10,
+  },
+  itemIconText: {
+    color: "#0F766E",
+    fontSize: 14,
+    marginLeft: 1,
+  },
+  itemTextWrap: {
+    flex: 1,
+    marginRight: 8,
   },
   separator: {
     height: 10,
   },
   itemTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "600",
-    marginBottom: 4,
+    marginBottom: 2,
+    color: "#1A1A1A",
   },
   itemSubtitle: {
     fontSize: 14,
-    color: "#555555",
+    color: "#666666",
+  },
+  itemDuration: {
+    minWidth: 52,
+    fontSize: 13,
+    textAlign: "right",
+    color: "#777777",
   },
   retryButton: {
     marginTop: 12,
@@ -325,3 +377,16 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
+function formatDuration(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
+  }
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
